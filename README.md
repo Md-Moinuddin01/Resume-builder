@@ -1,5 +1,3 @@
-# Resume-builder
-
 # Resume Builder
 
 A simple and modern Resume Builder application that helps users create professional resumes quickly and easily.
