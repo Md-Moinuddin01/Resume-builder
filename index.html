@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ResumeAI — Smart Resume Builder & Analyzer</title>
+  <meta name="description" content="Build and analyze professional resumes with AI. Get instant feedback, ATS scores, and beautiful templates."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="nav-logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-text">ResumeAI</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-builder" onclick="switchTab('builder')">✏️ Resume Builder</button>
+      <button class="nav-tab" id="tab-analyzer" onclick="switchTab('analyzer')">🔍 Resume Analyzer</button>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-api-key" onclick="showApiModal()">🔑 API Key</button>
+    </div>
+  </nav>
+
+  <!-- API KEY MODAL -->
+  <div class="modal-overlay" id="apiModal">
+    <div class="modal-box">
+      <h3>🔑 Set Claude API Key</h3>
+      <p>Your key is stored locally in the browser only.</p>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." class="form-input"/>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeApiModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveApiKey()">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ===== BUILDER TAB ===== -->
+  <div class="tab-panel active" id="panel-builder">
+    <div class="builder-layout">
+
+      <!-- LEFT: FORM -->
+      <div class="form-panel">
+        <div class="progress-header">
+          <span class="step-label" id="stepLabel">Step 1 of 7 — Personal Info</span>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressFill" style="width:14.28%"></div>
+          </div>
+        </div>
+
+        <!-- STEP 1: Personal Info -->
+        <div class="step-card active" id="step1">
+          <h2 class="step-title">👤 Personal Information</h2>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Full Name *</label>
+              <input type="text" id="fullName" class="form-input" placeholder="John Doe" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group full">
+              <label>Job Title / Role *</label>
+              <input type="text" id="jobTitle" class="form-input" placeholder="Senior Software Engineer" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group">
+              <label>Email *</label>
+              <input type="email" id="email" class="form-input" placeholder="john@example.com" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="text" id="phone" class="form-input" placeholder="+1 (555) 000-0000" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group">
+              <label>Location</label>
+              <input type="text" id="location" class="form-input" placeholder="San Francisco, CA" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group">
+              <label>LinkedIn URL</label>
+              <input type="url" id="linkedin" class="form-input" placeholder="linkedin.com/in/johndoe" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group full">
+              <label>Portfolio / Website</label>
+              <input type="url" id="portfolio" class="form-input" placeholder="johndoe.dev" oninput="updatePreview()"/>
+            </div>
+            <div class="form-group full">
+              <label>Profile Photo (optional)</label>
+              <input type="file" id="photoUpload" accept="image/*" class="form-input file-input" onchange="handlePhoto(event)"/>
+              <div class="photo-preview" id="photoPreview"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Summary -->
+        <div class="step-card" id="step2">
+          <h2 class="step-title">📝 Professional Summary</h2>
+          <div class="form-group">
+            <label>Summary</label>
+            <textarea id="summary" class="form-input textarea" rows="5" placeholder="Write a compelling 2-3 sentence professional summary..." oninput="updateCharCount(); updatePreview()"></textarea>
+            <div class="char-count"><span id="charCount">0</span> / 500 characters</div>
+          </div>
+          <button class="btn-ai" onclick="generateSummary()">✨ AI Generate Summary</button>
+          <div class="ai-loading" id="summaryLoading">
+            <div class="shimmer-bar"></div><div class="shimmer-bar short"></div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Experience -->
+        <div class="step-card" id="step3">
+          <h2 class="step-title">💼 Work Experience</h2>
+          <div id="experienceList"></div>
+          <button class="btn-add" onclick="addExperience()">+ Add Job</button>
+        </div>
+
+        <!-- STEP 4: Education -->
+        <div class="step-card" id="step4">
+          <h2 class="step-title">🎓 Education</h2>
+          <div id="educationList"></div>
+          <button class="btn-add" onclick="addEducation()">+ Add Education</button>
+        </div>
+
+        <!-- STEP 5: Skills -->
+        <div class="step-card" id="step5">
+          <h2 class="step-title">🛠️ Skills</h2>
+          <div class="form-group">
+            <label>Add Skills (press Enter)</label>
+            <input type="text" id="skillInput" class="form-input" placeholder="e.g. React, Python..." onkeydown="addSkill(event)"/>
+          </div>
+          <div class="skills-tags" id="skillsTags"></div>
+          <button class="btn-ai" onclick="suggestSkills()">✨ AI Suggest Skills</button>
+          <div class="ai-loading" id="skillsLoading">
+            <div class="shimmer-bar"></div><div class="shimmer-bar short"></div>
+          </div>
+        </div>
+
+        <!-- STEP 6: Projects -->
+        <div class="step-card" id="step6">
+          <h2 class="step-title">🚀 Projects <span class="optional">(optional)</span></h2>
+          <div id="projectsList"></div>
+          <button class="btn-add" onclick="addProject()">+ Add Project</button>
+        </div>
+
+        <!-- STEP 7: Certifications -->
+        <div class="step-card" id="step7">
+          <h2 class="step-title">🏆 Certifications <span class="optional">(optional)</span></h2>
+          <div id="certsList"></div>
+          <button class="btn-add" onclick="addCert()">+ Add Certification</button>
+
+          <!-- Download Panel -->
+          <div class="download-panel">
+            <h3>📥 Download Your Resume</h3>
+            <div class="download-buttons">
+              <button class="btn-download" onclick="downloadPDF()">📄 Download PDF</button>
+              <button class="btn-download" onclick="downloadHTML()">🌐 Download HTML</button>
+              <button class="btn-download" onclick="copyPlainText()">📋 Copy Plain Text</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="step-nav">
+          <button class="btn-secondary" id="prevBtn" onclick="prevStep()" style="display:none">← Previous</button>
+          <button class="btn-primary" id="nextBtn" onclick="nextStep()">Next →</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: PREVIEW -->
+      <div class="preview-panel">
+        <div class="preview-controls">
+          <span class="preview-label">Live Preview</span>
+          <div class="template-btns">
+            <button class="tmpl-btn active" onclick="setTemplate('classic', this)">Classic</button>
+            <button class="tmpl-btn" onclick="setTemplate('modern', this)">Modern</button>
+            <button class="tmpl-btn" onclick="setTemplate('minimal', this)">Minimal</button>
+          </div>
+          <div class="color-pickers">
+            <span class="color-dot" style="background:#7c3aed" onclick="setAccent('#7c3aed')"></span>
+            <span class="color-dot" style="background:#06b6d4" onclick="setAccent('#06b6d4')"></span>
+            <span class="color-dot" style="background:#10b981" onclick="setAccent('#10b981')"></span>
+            <span class="color-dot" style="background:#f59e0b" onclick="setAccent('#f59e0b')"></span>
+          </div>
+        </div>
+        <div class="resume-preview" id="resumePreview">
+          <div class="preview-placeholder">
+            <div class="placeholder-icon">📄</div>
+            <p>Start filling in your details and your resume will appear here in real time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ANALYZER TAB ===== -->
+  <div class="tab-panel" id="panel-analyzer">
+    <div class="analyzer-layout">
+      <div class="analyzer-input-panel">
+        <h2 class="section-title">🔍 Resume Analyzer</h2>
+        <p class="section-subtitle">Get AI-powered, actionable feedback on your resume instantly.</p>
+
+        <div class="form-group">
+          <label>Paste Your Resume Text</label>
+          <textarea id="resumeText" class="form-input textarea tall" placeholder="Paste your full resume text here..."></textarea>
+        </div>
+
+        <div class="upload-zone" id="uploadZone" ondragover="event.preventDefault()" ondrop="handleFileDrop(event)">
+          <div class="upload-icon">📂</div>
+          <p>Or drag & drop a <strong>.txt</strong> file here</p>
+          <input type="file" id="fileUpload" accept=".txt" onchange="handleFileUpload(event)" style="display:none"/>
+          <button class="btn-secondary" onclick="document.getElementById('fileUpload').click()">Browse File</button>
+        </div>
+
+        <div class="form-group" style="margin-top:1.5rem">
+          <label>Job Description (optional — for ATS keyword matching)</label>
+          <textarea id="jobDesc" class="form-input textarea" rows="4" placeholder="Paste the job description you're targeting..."></textarea>
+        </div>
+
+        <button class="btn-analyze" onclick="analyzeResume()" id="analyzeBtn">🔍 Analyze My Resume</button>
+        <div class="ai-loading" id="analyzeLoading">
+          <div class="shimmer-bar"></div><div class="shimmer-bar short"></div><div class="shimmer-bar"></div>
+        </div>
+      </div>
+
+      <div class="analyzer-results" id="analyzerResults" style="display:none">
+        <!-- Score Card -->
+        <div class="result-card" id="cardScore">
+          <h3>📊 Overall Score</h3>
+          <div class="score-gauge-wrap">
+            <svg class="score-gauge" viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+              <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="50" stroke-dasharray="0 314"/>
+            </svg>
+            <div class="score-center">
+              <span class="score-number" id="scoreNum">0</span>
+              <span class="score-slash">/100</span>
+            </div>
+          </div>
+          <p class="score-label" id="scoreLabel"></p>
+        </div>
+
+        <!-- Section Completeness -->
+        <div class="result-card" id="cardSections">
+          <h3>✅ Section Completeness</h3>
+          <div id="sectionChecklist"></div>
+        </div>
+
+        <!-- Impact & Language -->
+        <div class="result-card" id="cardImpact">
+          <h3>💪 Impact & Language</h3>
+          <div id="impactContent"></div>
+        </div>
+
+        <!-- ATS -->
+        <div class="result-card" id="cardATS">
+          <h3>🤖 ATS Compatibility</h3>
+          <div id="atsContent"></div>
+        </div>
+
+        <!-- Improvements -->
+        <div class="result-card" id="cardImprovements">
+          <h3>🎯 Top Improvements</h3>
+          <ol id="improvementsList"></ol>
+        </div>
+
+        <!-- Tone -->
+        <div class="result-card" id="cardTone">
+          <h3>🗣️ Tone & Professionalism</h3>
+          <div id="toneContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <p class="footer-main">Crafted with ❤️ by <strong>moinu</strong></p>
+    <p class="footer-sub">© 2026 ResumeAI — All rights reserved</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
