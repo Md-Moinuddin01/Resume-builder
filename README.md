@@ -21,3 +21,5 @@ git clone https://github.com/your-username/resume-builder.git
 cd resume-builder
 npm install
 npm start
+
+the hosting i have deleted for a short reasion let if you requied for that let me know , as you are smart guys you can also do it that
